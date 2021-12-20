@@ -44,6 +44,12 @@ func readMsgs(c net.Conn) chan tcpserver.Req {
 			netData, err := bufio.NewReader(c).ReadString('\n')
 			if err != nil {
 				fmt.Println(err)
+				reqs <- tcpserver.Req{
+					C:      tcpserver.Conn{Conn: c},
+					Text:   strings.TrimSpace(netData),
+					Closed: true,
+				}
+				return
 			}
 			reqs <- tcpserver.Req{
 				C:    tcpserver.Conn{Conn: c},

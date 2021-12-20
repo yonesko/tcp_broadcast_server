@@ -21,27 +21,32 @@ func New() *server {
 }
 
 type Req struct {
-	C    Conn
-	Text string
+	C      Conn
+	Text   string
+	Closed bool
 }
 
 type Conn struct {
 	net.Conn
 }
 
-func (s *server) ReadRequests(msgs chan Req) {
-	for msg := range msgs {
-		if msg.Text == "STOP" {
-			s.deleteConnection(msg.C)
-			fmt.Printf("Stopping %s\n", msg.C.RemoteAddr().String())
-			close(msgs)
+func (s *server) ReadRequests(reqs chan Req) {
+	for req := range reqs {
+		if req.Text == "STOP" {
+			s.deleteConnection(req.C)
+			fmt.Printf("Stopping %s\n", req.C.RemoteAddr().String())
+			close(reqs)
 			break
 		}
-		if strings.HasPrefix(msg.Text, "HELLO ") {
-			s.addConnection(msg.C, msg.Text)
+		if strings.HasPrefix(req.Text, "HELLO ") {
+			s.addConnection(req.C, req.Text)
 			continue
 		}
-		s.broadcast(msg)
+		if req.Closed {
+			s.deleteConnection(req.C)
+			close(reqs)
+		}
+		s.broadcast(req)
 	}
 }
 
